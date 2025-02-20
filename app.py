@@ -4,7 +4,6 @@ import pandas as pd
 import os
 from io import BytesIO
 
-
 # App setup with styling by using markdown
 st.markdown(
     """
@@ -56,7 +55,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 # Title with Styling
 st.markdown('<h1 class="title">💿 Welcom to  Data Sweeper by GIAIC</h1>', unsafe_allow_html=True)
 
@@ -69,24 +67,23 @@ st.markdown(
 # Add a Button with Custom Styling
 st.markdown('<div class="center"><button class="stButton">Upload File</button></div>', unsafe_allow_html=True)
 
-uploaded_files=st.file_uploader ("Upload files (CSV or EXcel):",type=["csv", "xlsx"], accept_multiple_files=True)
+uploaded_files = st.file_uploader("Upload files (CSV or Excel):", type=["csv", "xlsx"], accept_multiple_files=True)
 
 if uploaded_files:
     for file in uploaded_files:
-        file_ext=os.path.splitext (file.name) [-1].lower()
+        file_ext = os.path.splitext(file.name)[-1].lower()
 
-
-        if file_ext==".csv":
-            df=pd.read_csv(file)
-        elif file_ext==".xlsx":
-            df=pd.read_excel(file)  
+        if file_ext == ".csv":
+            df = pd.read_csv(file)
+        elif file_ext == ".xlsx":
+            df = pd.read_excel(file, engine="openpyxl")  # Fix: Specify engine
         else:
-            st.error(f"unsupported file type:{file_ext}") 
+            st.error(f"Unsupported file type: {file_ext}")
             continue
 
-        # Dispaly Description about file
-        st.write(f"** File Name:**{file.name}")  
-        st.write(f"**File size:**{file.size/1024}")
+        # Display Description about file
+        st.write(f"**File Name:** {file.name}")  
+        st.write(f"**File Size:** {file.getbuffer().nbytes / 1024:.2f} KB")  # Fix: Correct file size calculation
 
         # Showing 5 rows of our df
         st.write("👁️ Preview the Head of the Dataframe")
@@ -94,8 +91,8 @@ if uploaded_files:
 
         # Options for Data cleaning
         st.subheader("🧹 Data Cleaning Options")
-        if st.checkbox(f"clean Data for {file.name}"):
-            col1,col2=st.columns(2)
+        if st.checkbox(f"Clean Data for {file.name}"):
+            col1, col2 = st.columns(2)
 
             with col1:
                 if st.button(f"Remove Duplicates from {file.name}"):
@@ -103,40 +100,35 @@ if uploaded_files:
                     st.write("Duplicates Removed!")
 
             with col2:
-                if st.button(f"Fill Missing value for {file.name}"):
-                    numeric_cols=df.select_dtypes(include=['number']).columns
-                    df[numeric_cols]=df[numeric_cols].fillna(df[numeric_cols].mean())
+                if st.button(f"Fill Missing Values for {file.name}"):
+                    numeric_cols = df.select_dtypes(include=['number']).columns
+                    df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
                     st.write("Missing values have been filled!")  
 
-        # choose columns to keep or convert
-        st.subheader("select columns to convert")
-        columns=st.multiselect(f"choose columns for {file.name}",df.columns,default=df.columns) 
-        df=df[columns]                 
+        # Choose columns to keep or convert
+        st.subheader("Select Columns to Convert")
+        columns = st.multiselect(f"Choose columns for {file.name}", df.columns, default=df.columns) 
+        df = df[columns]                  
    
-
         # Visualization added
-        st.subheader("📈 Data Visualization ")
-        if st.checkbox(f"show visualization for {file.name}"):
-            st.line_chart(df.select_dtypes(include='number').iloc[:,:2])
+        st.subheader("📈 Data Visualization")
+        if st.checkbox(f"Show visualization for {file.name}"):
+            st.line_chart(df.select_dtypes(include='number').iloc[:, :2])
 
-
-
-        # file conversion from CSV to Excel
-        st.subheader("🔄 conversion options")
-        conversion_type=st.radio(f"convert{file.name} to:", ["CSV", "Excel"],key=file.name)
-        if st.button (f"convert {file.name}"):
-            buffer=BytesIO() 
-            if conversion_type=="csv":
-                df.to_csv(buffer,index=False) 
-                file_name=file.name.replace(file_ext,".csv")
-                mime_type="text/csv"
-
-            elif conversion_type=="Excel":
-                df.to_excel(buffer,index=False)
-                file_name=file.name.replace(file_ext,".xlsx")
-                mime_type="application/vnd.openxmlformats_officedocument.spreadsheetml.sheet"
-                buffer.seek(0)
-
+        # File conversion from CSV to Excel
+        st.subheader("🔄 Conversion Options")
+        conversion_type = st.radio(f"Convert {file.name} to:", ["CSV", "Excel"], key=file.name)
+        if st.button(f"Convert {file.name}"):
+            buffer = BytesIO()
+            if conversion_type == "CSV":
+                df.to_csv(buffer, index=False)
+                file_name = file.name.replace(file_ext, ".csv")
+                mime_type = "text/csv"
+            elif conversion_type == "Excel":
+                df.to_excel(buffer, index=False, engine="openpyxl")  # Fix: Ensure engine is specified
+                file_name = file.name.replace(file_ext, ".xlsx")
+                mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            buffer.seek(0)  # Fix: Ensure buffer is at start before download
 
             # Download converted file
             st.download_button(
@@ -146,4 +138,4 @@ if uploaded_files:
                 mime=mime_type
             )  
 
-            st.success("🎉 All files proccessed!")  # to run this file - streamlit run app.py    
+            st.success("🎉 All files processed!")
